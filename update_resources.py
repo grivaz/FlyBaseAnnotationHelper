@@ -99,13 +99,13 @@ def getGenesDict(gene_synonyms_path: str, current_genes_path: str):
         with open(config.get('PICKLES','gene_dict'), "wb") as out:
             pickle.dump(gene_dict, out)
 
-if os.path.exists(config.get('FLYBASE','PMC_ids')) and os.path.exists(config.get('FLYBASE','gene_synonyms'))\
+if os.path.exists(config.get('PUBMED','PMC_ids')) and os.path.exists(config.get('FLYBASE','gene_synonyms'))\
         and os.path.exists(config.get('FLYBASE','current_genes')):
-    getPMIDtoPMCID(config.get('FLYBASE','PMC_ids'))
+    getPMIDtoPMCID(config.get('PUBMED','PMC_ids'))
     getGenesDict(config.get('FLYBASE','gene_synonyms'), config.get('FLYBASE','current_genes'))
 else:
-    if not os.path.exists(config.get('FLYBASE','PMC_ids')):
-        print(config.get('FLYBASE','PMC_ids') + " not found. Please add proper path in config.ini")
+    if not os.path.exists(config.get('PUBMED','PMC_ids')):
+        print(config.get('PUBMED','PMC_ids') + " not found. Please add proper path in config.ini")
     if not os.path.exists(config.get('FLYBASE','gene_synonyms')):
         print(config.get('FLYBASE','gene_synonyms') + " not found. Please add proper path in config.ini")
     if not os.path.exists(config.get('FLYBASE','current_genes')):

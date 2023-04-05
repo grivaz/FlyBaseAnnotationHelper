@@ -44,6 +44,14 @@ def getPMIDtoPMCID(path: str):
             if pmid and pmcid:
                 pmid_to_pmcid[pmid] = pmcid
     #pickle the dictionary
+    # get the directory path from the config parameter
+    dir_path = os.path.dirname(config.get('PICKLES', 'PMC_ids_dict'))
+
+    # create the directory if it doesn't exist
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+
+    # open the file for writing
     with open(config.get('PICKLES','PMC_ids_dict'), "wb") as out:
         pickle.dump(pmid_to_pmcid, out)
 
@@ -96,6 +104,14 @@ def getGenesDict(gene_synonyms_path: str, current_genes_path: str):
                     symbol = row[CURRENT_SYMBOL]
                     gene_dict[symbol] = fbid  # this should be last to have absolute precedence
         #pickle the dictionary
+        # get the directory path from the config parameter
+        dir_path = os.path.dirname(config.get('PICKLES', 'gene_dict'))
+
+        # create the directory if it doesn't exist
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        # open the file for writing
         with open(config.get('PICKLES','gene_dict'), "wb") as out:
             pickle.dump(gene_dict, out)
 

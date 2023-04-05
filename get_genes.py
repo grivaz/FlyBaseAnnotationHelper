@@ -113,7 +113,7 @@ def get_genes(paper_file: str, gene_dict: typing.Dict[str, str], snippet_type: s
         if not in_body:
             return False
         assert n.tag == BODY
-        if sec == n.getchildren()[0]: # somewhat crude way of guessing if it's in the introduction
+        if sec == list(n)[0]: # somewhat crude way of guessing if it's in the introduction
             return False
         return True
 

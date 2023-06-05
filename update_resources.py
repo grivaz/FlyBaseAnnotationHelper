@@ -76,6 +76,7 @@ def getGenesDict(gene_synonyms_path: str, current_genes_path: str):
             gene = line.rstrip()
             relevant_genes.add(gene)
     gene_dict = dict()
+    fbid_to_symbol = dict()
 
     with open(gene_synonyms_path, "r") as gene_file:
         length = len(gene_file.readlines())
@@ -103,17 +104,23 @@ def getGenesDict(gene_synonyms_path: str, current_genes_path: str):
 
                     symbol = row[CURRENT_SYMBOL]
                     gene_dict[symbol] = fbid  # this should be last to have absolute precedence
-        #pickle the dictionary
-        # get the directory path from the config parameter
+                    fbid_to_symbol[fbid] = symbol
+        #pickle the dictionaries
+        # get the directory paths from the config parameter
         dir_path = os.path.dirname(config.get('PICKLES', 'gene_dict'))
+        fbid_to_symbol_dir_path = os.path.dirname(config.get('PICKLES', 'fbid_to_symbol_dict'))
 
-        # create the directory if it doesn't exist
+        # create the directories if it doesn't exist
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
+        if not os.path.exists(fbid_to_symbol_dir_path):
+            os.makedirs(fbid_to_symbol_dir_path)
 
-        # open the file for writing
+        # output the dictionaries
         with open(config.get('PICKLES','gene_dict'), "wb") as out:
             pickle.dump(gene_dict, out)
+        with open(config.get('PICKLES','fbid_to_symbol_dict'), "wb") as out:
+            pickle.dump(fbid_to_symbol, out)
 
 if os.path.exists(config.get('PUBMED','PMC_ids')) and os.path.exists(config.get('FLYBASE','gene_synonyms'))\
         and os.path.exists(config.get('FLYBASE','current_genes')):

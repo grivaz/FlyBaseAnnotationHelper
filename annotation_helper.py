@@ -26,6 +26,7 @@ import os
 import get_genes
 import csv
 import deep_learning
+import tqdm
 
 arg_parser = argparse.ArgumentParser(description="Gets gene candidates from xml papers")
 arg_parser.add_argument("input", type=argparse.FileType('r'), help="A text file containing one pmid per line")
@@ -121,7 +122,9 @@ if config_parser.getboolean('PARAMETERS', 'use_deep_learning'):
     deep_learning.initialize(config_parser.get('PATHS', 'deep_learning_model'))
 
 results = {}
-for pmid in cmd_args.input:
+with open(cmd_args.input.name, "r") as f:
+    input_list = f.readlines()
+for pmid in tqdm.tqdm(input_list, desc="Processing articles", total=len(input_list)):
     if pmid.strip() not in pmid_to_pmcid_dict:
         # print it to the standard error stream
         print("no pmcid for " + pmid.strip(), file=sys.stderr)

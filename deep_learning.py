@@ -30,7 +30,7 @@ def initialize(path_to_model):
         scibert = "allenai/scibert_scivocab_uncased"
         tokenizer = AutoTokenizer.from_pretrained(scibert, model_max_length=512)
         model = AutoModelForSequenceClassification.from_pretrained(path_to_model, num_labels=2)
-        model_pipeline = pipeline("text-classification", model=model, tokenizer=tokenizer, device=-1)
+        model_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer, device=-1)
 
 def get_gene(fbrf, candidates, fbid_to_symbol):
     occurrences = set()

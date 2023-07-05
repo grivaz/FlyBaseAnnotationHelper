@@ -2,3 +2,5 @@ requests==2.22.0
 tqdm==4.46.1
 transformers==4.2.2
 xmltodict==0.13.0
+pubmed_parser
+torch==2.0.1

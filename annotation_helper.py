@@ -27,6 +27,8 @@ import get_genes
 import csv
 import deep_learning
 import tqdm
+import logging
+import subprocess
 
 arg_parser = argparse.ArgumentParser(description="Gets gene candidates from xml papers")
 arg_parser.add_argument("input", type=argparse.FileType('r'), help="A text file containing one pmid per line")
@@ -39,6 +41,10 @@ config_parser.read("config/config.ini")
 with open(config_parser.get('PICKLES','PMC_ids_dict'), "rb") as f:
     pmid_to_pmcid_dict = pickle.load(f)
 
+
+# Configure logging
+logging.basicConfig(filename='error.log', level=logging.WARNING)
+
 def getFtpPath(pmcid: str):
     """Returns the ftp path to a paper given its pmcid
 
@@ -47,20 +53,25 @@ def getFtpPath(pmcid: str):
             The pmcid of the paper
     """
     pmc_api_url = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi?id=" + pmcid
-    response = requests.get(pmc_api_url)
-    dict_data = xmltodict.parse(response.content)
-    ftplink = ""
-    if "error" in dict_data['OA']:
-        print("ERROR: " + dict_data['OA']['error']['@code'] + " " + pmcid, file=sys.stderr)
-    else:
-        link = dict_data['OA']['records']['record']['link']
-        if isinstance(link, list):
-            ftplink = link[0]['@href']
+    try:
+        response = requests.get(pmc_api_url)
+        response.raise_for_status()  # Check for any request errors
+        dict_data = xmltodict.parse(response.content)
+        ftplink = ""
+        if "error" in dict_data['OA']:
+            error_code = dict_data['OA']['error']['@code']
+            logging.warning(f"ERROR: {error_code} {pmcid}")
         else:
-            ftplink = link['@href']
-        assert (".tar.gz" in ftplink)
-    time.sleep(config_parser.getint('PARAMETERS','sleep_time_between_requests'))
-    return ftplink
+            link = dict_data['OA']['records']['record']['link']
+            if isinstance(link, list):
+                ftplink = link[0]['@href']
+            else:
+                ftplink = link['@href']
+            assert (".tar.gz" in ftplink)
+        time.sleep(config_parser.getint('PARAMETERS', 'sleep_time_between_requests'))
+        return ftplink
+    except (requests.exceptions.RequestException, KeyError, AssertionError) as e:
+        logging.warning(f"Failed to get FTP path for {pmcid}: {str(e)}")
 
 def download(ftp: str):
     """Downloads a paper given its ftp path
@@ -70,7 +81,10 @@ def download(ftp: str):
             The ftp path to the paper
     """
     wget = f"wget -nc --timeout=10 -P {config_parser.get('PATHS', 'corpus')} {ftp}"
-    os.system(wget)
+    try:
+        subprocess.run(wget, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        logging.warning(f"Failed to download {ftp}: {str(e)}")
 
 def getXmlFromTar(pmcid: str):
     """Extracts the xml file from the tar.gz file
@@ -80,14 +94,16 @@ def getXmlFromTar(pmcid: str):
             The pmcid of the paper
     """
     f = f"{config_parser.get('PATHS', 'corpus')}/{pmcid}.tar.gz"
-    untar = "tar -xf " + f + " -C " + config_parser.get('PATHS', 'corpus')
-    os.system(untar)
-    # make xml directory if it doesn't exist
-    if not os.path.exists(config_parser.get('PATHS', 'xml')):
-        os.makedirs(config_parser.get('PATHS', 'xml'))
-    copy_xml = "cp " + config_parser.get('PATHS', 'corpus') + "/" + pmcid + "/" + "*.nxml " + config_parser.get('PATHS', 'xml') \
-               + "/" + pmcid + ".nxml"
-    os.system(copy_xml)
+    untar = f"tar -xf {f} -C {config_parser.get('PATHS', 'corpus')}"
+    try:
+        subprocess.run(untar, shell=True, check=True)
+        # make xml directory if it doesn't exist
+        if not os.path.exists(config_parser.get('PATHS', 'xml')):
+            os.makedirs(config_parser.get('PATHS', 'xml'))
+        copy_xml = f"cp {config_parser.get('PATHS', 'corpus')}/{pmcid}/*.nxml {config_parser.get('PATHS', 'xml')}/{pmcid}.nxml"
+        subprocess.run(copy_xml, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        logging.warning(f"Failed to extract XML from tar for {pmcid}: {str(e)}")
 
 def removeFiles(pmcid: str):
     """Removes paper files that were downloaded
@@ -103,7 +119,7 @@ def removeFiles(pmcid: str):
         pass
     f = f"{config_parser.get('PATHS', 'corpus')}/{pmcid}"
     # remove extracted directory
-    os.system("rm -r " + f)
+    subprocess.run(f"rm -r {f}", shell=True, check=False)
     f = f"{config_parser.get('PATHS', 'xml')}/{pmcid}.nxml"
     try:
         os.remove(f)
@@ -127,25 +143,29 @@ with open(cmd_args.input.name, "r") as f:
 for pmid in tqdm.tqdm(input_list, desc="Processing articles", total=len(input_list)):
     if pmid.strip() not in pmid_to_pmcid_dict:
         # print it to the standard error stream
-        print("no pmcid for " + pmid.strip(), file=sys.stderr)
+        logging.warning(f"No pmcid for {pmid.strip()}")
     else:
         pmcid = pmid_to_pmcid_dict[pmid.strip()]
         ftp = getFtpPath(pmcid)
-        download(ftp)
-        getXmlFromTar(pmcid)
-        result = None
-        if config_parser.getboolean('PARAMETERS', 'use_deep_learning'):
-            result = deep_learning.get_genes_with_dl(os.path.join(config_parser.get('PATHS', 'xml'), pmcid + ".nxml"), gene_dict, fbid_to_symbol)
-        else:
-            result = get_genes.get_genes(os.path.join(config_parser.get('PATHS', 'xml'), pmcid + ".nxml"),
-                                    gene_dict, config_parser.get('PARAMETERS', 'snippet_type'),
-                                    config_parser.getboolean('PARAMETERS', 'output_gene_occurence'),
-                                    config_parser.getboolean('PARAMETERS', 'output_gene_frequency'),
-                                    config_parser.getboolean('PARAMETERS', 'output_word_frequency'),
-                                    config_parser.getboolean('PARAMETERS', 'output_raw_occurence'))
-        results[pmid.strip()] = result
-        if config_parser.getboolean('PARAMETERS', 'remove_files'):
-            removeFiles(pmcid)
+        if ftp is not None:
+            download(ftp)
+            getXmlFromTar(pmcid)
+            result = None
+            try:
+                if config_parser.getboolean('PARAMETERS', 'use_deep_learning'):
+                    result = deep_learning.get_genes_with_dl(os.path.join(config_parser.get('PATHS', 'xml'), pmcid + ".nxml"), gene_dict, fbid_to_symbol)
+                else:
+                    result = get_genes.get_genes(os.path.join(config_parser.get('PATHS', 'xml'), pmcid + ".nxml"),
+                                                 gene_dict, config_parser.get('PARAMETERS', 'snippet_type'),
+                                                 config_parser.getboolean('PARAMETERS', 'output_gene_occurence'),
+                                                 config_parser.getboolean('PARAMETERS', 'output_gene_frequency'),
+                                                 config_parser.getboolean('PARAMETERS', 'output_word_frequency'),
+                                                 config_parser.getboolean('PARAMETERS', 'output_raw_occurence'))
+                results[pmid.strip()] = result
+                if config_parser.getboolean('PARAMETERS', 'remove_files'):
+                    removeFiles(pmcid)
+            except Exception as e:
+                logging.warning(f"Error processing {pmid.strip()}: {str(e)}")
 
 
 with open(config_parser.get('PATHS', 'output'), 'w', newline='', encoding='utf-8') as f:

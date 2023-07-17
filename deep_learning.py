@@ -27,6 +27,7 @@ tokenizer_kwargs = {'padding': "max_length", 'truncation': True, 'max_length': 5
 def initialize(path_to_model):
     global model_pipeline
     if model_pipeline is None:
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
         scibert = "allenai/scibert_scivocab_uncased"
         tokenizer = AutoTokenizer.from_pretrained(scibert, model_max_length=512)
         model = AutoModelForSequenceClassification.from_pretrained(path_to_model, num_labels=2)

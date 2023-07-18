@@ -161,7 +161,13 @@ for pmid in tqdm.tqdm(input_list, desc="Processing articles", total=len(input_li
                                                  config_parser.getboolean('PARAMETERS', 'output_gene_frequency'),
                                                  config_parser.getboolean('PARAMETERS', 'output_word_frequency'),
                                                  config_parser.getboolean('PARAMETERS', 'output_raw_occurence'))
-                results[pmid.strip()] = result
+                if result is not None:
+                    results[pmid.strip()] = result
+                else:
+                    if config_parser.getboolean('PARAMETERS', 'use_deep_learning'):
+                        results[pmid.strip()] = {}
+                    else:
+                        results[pmid.strip()] = [[], []]
                 if config_parser.getboolean('PARAMETERS', 'remove_files'):
                     removeFiles(pmcid)
             except Exception as e:

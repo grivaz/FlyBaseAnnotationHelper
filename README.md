@@ -32,7 +32,7 @@ Once the resources are generated, you can run the main script fly_base_annotatio
 configured via config.ini. You will also need to pass it a file containing one pmid per line, for the papers for which you
 want the genes to be found. The configuration file includes options to specify paths to FlyBase files, paths to pickles,
 output paths, and various parameters, such as the politeness parameter for requests to the NCBI server and whether to 
-output gene occurrence, snippet, gene frequency, word frequency, and raw count.
+output gene occurrence, snippet, gene frequency, word frequency, and raw count. If you use the machine learning algorithm, the output will be paper, gene and confidence.
 
 ## Output
 The output of the Fly Base Annotation Helper is a TSV file with the columns described above. The output can be used help

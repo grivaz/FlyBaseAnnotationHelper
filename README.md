@@ -34,6 +34,8 @@ want the genes to be found. The configuration file includes options to specify p
 output paths, and various parameters, such as the politeness parameter for requests to the NCBI server and whether to 
 output gene occurrence, snippet, gene frequency, word frequency, and raw count. If you use the machine learning algorithm, the output will be paper, gene and confidence.
 
+The deep learning model can be found at [hugging face FlyBaseGeneAbstractClassifier](https://huggingface.co/cgrivaz/FlyBaseGeneAbstractClassifier)
+
 ## Output
 The output of the Fly Base Annotation Helper is a TSV file with the columns described above. The output can be used help
 human annotators tag the papers with the genes that they are about.

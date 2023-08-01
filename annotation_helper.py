@@ -23,9 +23,9 @@ import requests
 import xmltodict
 import time
 import os
-import get_genes
+from gene_finding import get_genes
 import csv
-import deep_learning
+from gene_finding import deep_learning
 import tqdm
 import logging
 import subprocess

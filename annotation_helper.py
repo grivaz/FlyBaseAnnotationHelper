@@ -24,8 +24,8 @@ import xmltodict
 import time
 import os
 from gene_finding import get_genes
-import csv
 from gene_finding import deep_learning
+import csv
 import tqdm
 import logging
 import subprocess
@@ -41,6 +41,7 @@ config_parser.read("config/config.ini")
 with open(config_parser.get('PICKLES','PMC_ids_dict'), "rb") as f:
     pmid_to_pmcid_dict = pickle.load(f)
 
+EXCEPTIONS_PATH = config_parser.get('PATHS','exceptions')
 
 # Configure logging
 logging.basicConfig(filename='error.log', level=logging.WARNING)
@@ -153,14 +154,17 @@ for pmid in tqdm.tqdm(input_list, desc="Processing articles", total=len(input_li
             result = None
             try:
                 if config_parser.getboolean('PARAMETERS', 'use_deep_learning'):
-                    result = deep_learning.get_genes_with_dl(os.path.join(config_parser.get('PATHS', 'xml'), pmcid + ".nxml"), gene_dict, fbid_to_symbol)
+                    result = deep_learning.get_genes_with_dl(os.path.join(config_parser.get('PATHS', 'xml'), 
+                                                                                       pmcid + ".nxml"), gene_dict, fbid_to_symbol,
+                                                                                       EXCEPTIONS_PATH)
                 else:
                     result = get_genes.get_genes(os.path.join(config_parser.get('PATHS', 'xml'), pmcid + ".nxml"),
                                                  gene_dict, config_parser.get('PARAMETERS', 'snippet_type'),
                                                  config_parser.getboolean('PARAMETERS', 'output_gene_occurence'),
                                                  config_parser.getboolean('PARAMETERS', 'output_gene_frequency'),
                                                  config_parser.getboolean('PARAMETERS', 'output_word_frequency'),
-                                                 config_parser.getboolean('PARAMETERS', 'output_raw_occurence'))
+                                                 config_parser.getboolean('PARAMETERS', 'output_raw_occurence'),
+                                                 EXCEPTIONS_PATH)
                 if result is not None:
                     results[pmid.strip()] = result
                 else:

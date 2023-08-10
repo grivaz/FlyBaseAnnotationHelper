@@ -18,22 +18,18 @@
 from xml.etree import ElementTree
 
 import typing
-import configparser
+
 RAW = "raw"
 WORD = "word"
 GENES = "genes"
 
-config = configparser.ConfigParser()
-config.read("config/config.ini")
-
-EXCEPTIONS_PATH = config.get('PATHS','exceptions')
 exceptions = None
 BODY = "body"
 SEC = "sec"
 
 
 
-def is_exception(gene_canditate: str, exceptions: typing.List[str]) -> bool:
+def is_exception(gene_canditate: str, exceptions: typing.List[str], exceptions_path: str) -> bool:
     """Indicates whether the given gene candidate matches the given exception list
 
     A candidate matches an exception if the exception is part of the candidate, and starts and end at the same place as
@@ -56,7 +52,7 @@ def is_exception(gene_canditate: str, exceptions: typing.List[str]) -> bool:
 
     if exceptions is None:
         exceptions = set()
-        with open(EXCEPTIONS_PATH, "r") as f:
+        with open(exceptions_path, "r") as f:
             for ex in f.readlines():
                 ex = ex.strip()
                 exceptions.add(ex)
@@ -70,7 +66,7 @@ def is_exception(gene_canditate: str, exceptions: typing.List[str]) -> bool:
     return False
 
 def get_genes(paper_file: str, gene_dict: typing.Dict[str, str], snippet_type: str, output_gene_occurrence: bool,
-              gene_freq: bool, word_freq: bool, raw_occurrences: bool) -> typing.Dict[str, float]:
+              gene_freq: bool, word_freq: bool, raw_occurrences: bool, exceptions_path: str) -> typing.Dict[str, float]:
     """
     Gets the genes that a paper should be tagged with
 
@@ -124,7 +120,8 @@ def get_genes(paper_file: str, gene_dict: typing.Dict[str, str], snippet_type: s
     for node in tree.iter('italic'):
         if node.text:
             gene_canditate = node.text.strip()
-            if gene_canditate in gene_dict and len(gene_canditate) > 1 and not is_exception(gene_canditate, exceptions):
+            if gene_canditate in gene_dict and len(gene_canditate) > 1 and not is_exception(gene_canditate, 
+                                                                                            exceptions, exceptions_path):
                 cands.add(gene_canditate)
                 if is_in_relevant_section(node):
                     gene = gene_dict[gene_canditate]

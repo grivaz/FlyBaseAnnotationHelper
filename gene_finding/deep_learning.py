@@ -19,7 +19,7 @@ import os
 import sys
 import pubmed_parser as pp
 import typing
-import get_genes
+from gene_finding import get_genes
 
 
 model_pipeline = None
@@ -40,12 +40,12 @@ def get_gene(fbrf, candidates, fbid_to_symbol):
     out = fbid_to_symbol[fbrf] + " " + " ".join(str(candidates.count(cand)) + " " + cand for cand in occurrences)
     return out
  
-def get_genes_with_dl(paper_file: str, gene_dict: typing.Dict[str, str], fbid_to_symbol: typing.Dict[str, str]):
+def get_genes_with_dl(paper_file: str, gene_dict: typing.Dict[str, str], fbid_to_symbol: typing.Dict[str, str], exceptions_path: str):
     if os.path.isfile(paper_file) and paper_file.endswith("nxml"):
         # get text
         pubmed_dict = pp.parse_pubmed_xml(paper_file)  # dictionary output
         abstract = pubmed_dict["abstract"]  # abstract
-        _, candidates = get_genes.get_genes(paper_file, gene_dict, 'none', True, False, False, False)
+        _, candidates = get_genes.get_genes(paper_file, gene_dict, 'none', True, False, False, False, exceptions_path)
         results = {}
         for fbrf in candidates:
             gene = get_gene(fbrf, candidates[fbrf], fbid_to_symbol)

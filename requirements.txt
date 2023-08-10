@@ -4,4 +4,3 @@ transformers==4.2.2
 xmltodict==0.13.0
 pubmed_parser
 torch==2.0.1
--e ./gene_finding

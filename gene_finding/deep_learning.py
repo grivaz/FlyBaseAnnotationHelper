@@ -51,9 +51,14 @@ def get_genes_with_dl(paper_file: str, gene_dict: typing.Dict[str, str], fbid_to
             gene = get_gene(fbrf, candidates[fbrf], fbid_to_symbol)
             input = gene + ". " + abstract
             results[fbrf] = transform(input)
-        return results
+        if results:
+            return results, 1  # successfully found genes.
+        else:
+            return results, 0  # No genes found.
     else:
         print("File does not exist or is not an nxml file: " + paper_file, file=sys.stderr)
+        return {}, -1  # No nxml error
+
 
 def transform(input):
     #print error if model_pipeline is not initialized

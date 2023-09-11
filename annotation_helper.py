@@ -145,6 +145,7 @@ for pmid in tqdm.tqdm(input_list, desc="Processing articles", total=len(input_li
     if pmid.strip() not in pmid_to_pmcid_dict:
         # print it to the standard error stream
         logging.warning(f"No pmcid for {pmid.strip()}")
+        results[pmid.strip()] = {'Bad_pmcid': 0.000000000000000}
     else:
         pmcid = pmid_to_pmcid_dict[pmid.strip()]
         ftp = getFtpPath(pmcid)
@@ -154,9 +155,9 @@ for pmid in tqdm.tqdm(input_list, desc="Processing articles", total=len(input_li
             result = None
             try:
                 if config_parser.getboolean('PARAMETERS', 'use_deep_learning'):
-                    result = deep_learning.get_genes_with_dl(os.path.join(config_parser.get('PATHS', 'xml'), 
-                                                                                       pmcid + ".nxml"), gene_dict, fbid_to_symbol,
-                                                                                       EXCEPTIONS_PATH)
+                    result, status = deep_learning.get_genes_with_dl(os.path.join(config_parser.get('PATHS', 'xml'),
+                                                                     pmcid + ".nxml"), gene_dict, fbid_to_symbol,
+                                                                     EXCEPTIONS_PATH)
                 else:
                     result = get_genes.get_genes(os.path.join(config_parser.get('PATHS', 'xml'), pmcid + ".nxml"),
                                                  gene_dict, config_parser.get('PARAMETERS', 'snippet_type'),
@@ -165,11 +166,14 @@ for pmid in tqdm.tqdm(input_list, desc="Processing articles", total=len(input_li
                                                  config_parser.getboolean('PARAMETERS', 'output_word_frequency'),
                                                  config_parser.getboolean('PARAMETERS', 'output_raw_occurence'),
                                                  EXCEPTIONS_PATH)
-                if result is not None:
+                if result:
                     results[pmid.strip()] = result
                 else:
                     if config_parser.getboolean('PARAMETERS', 'use_deep_learning'):
-                        results[pmid.strip()] = {}
+                        if status == 0:
+                            results[pmid.strip()] = {'No_Matches': 0.000000000000000}
+                        else:
+                            results[pmid.strip()] = {'No_nxml': 0.000000000000000}
                     else:
                         results[pmid.strip()] = [[], []]
                 if config_parser.getboolean('PARAMETERS', 'remove_files'):
@@ -211,5 +215,4 @@ with open(config_parser.get('PATHS', 'output'), 'w', newline='', encoding='utf-8
                         writer.writerow([pmid, fbgn, occurrence]+scores)
                 else:
                     writer.writerow([pmid,fbgn]+scores)
-
 
